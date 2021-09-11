@@ -21,13 +21,14 @@ namespace HowestCalendar.Services
         private readonly ICSHandler _icsHandler = new();
         private readonly Timer _timer;
         private AppSettings appSettings = JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText("appsettings.json"));
+        private DateTime? sended = null;
 
         public CommandHandler(IServiceProvider services)
         {
             _commands = services.GetRequiredService<CommandService>();
             _discord = services.GetRequiredService<DiscordSocketClient>();
             _services = services;
-            _timer = new Timer { AutoReset = true, Interval = 5000 };
+            _timer = new Timer { AutoReset = true, Interval = 3_600_000 };
 
             _commands.CommandExecuted += CommandExecutedAsync;
             _discord.MessageReceived += MessageReceivedAsync;
@@ -69,10 +70,24 @@ namespace HowestCalendar.Services
         {
             try
             {
-                appSettings = JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText("appsettings.json"));
-                var channel = _discord.GetChannel(ulong.Parse(appSettings.SetChannel)) as SocketTextChannel;
-                await channel.SendMessageAsync("test test test");
-
+                if(sended == null || sended.Value.Date != DateTime.Today.Date)
+                {
+                    appSettings = JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText("appsettings.json"));
+                    var channel = _discord.GetChannel(ulong.Parse(appSettings.SetChannel)) as SocketTextChannel;
+                    var events = _icsHandler.TomorrowSchedule();
+                    if(events.Count() != 0)
+                    {
+                        var embedbuild = new EmbedBuilder() { Title = "Todays schedule" };
+                        foreach (var schedule in events)
+                        {
+                            embedbuild.AddField(schedule.Subject, $"classroom: {schedule.ClassRoom}\n" +
+                                                                $"Hour: {schedule.Time.StartTime:t} - {schedule.Time.EndTime:t}\n" +
+                                                                $"Teacher(s): {schedule.Teacher}");
+                        }
+                        await channel.SendMessageAsync(embed: embedbuild.WithColor(Color.Blue).Build());
+                    }
+                    sended = DateTime.Now;
+                }
             }
             catch
             {

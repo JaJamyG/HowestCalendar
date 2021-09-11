@@ -16,6 +16,31 @@ namespace HowestCalendar.Commands
     public class General : ModuleBase<SocketCommandContext>
     {
         private ICSHandler _icsHandler = new();
+        [Command("info")]
+        public async Task InfoAsync()
+        {
+            var embedInfo = new EmbedBuilder() 
+            { 
+                Title = "Info about thi discord bot.", 
+                Description="This bot will post a message once a day about tomorrows events on the calander." 
+            }.WithColor(Color.Blue).Build();
+            await ReplyAsync(embed: embedInfo);
+        }
+        [Command("help")]
+        public async Task HelpAsync()
+        {
+            var embedHelp = new EmbedBuilder()
+            {
+                Title = "All the commands:",
+                Description =   "All the commands starts with $\n" +
+                                "$today to see the todays events\n" +
+                                "$tomorrow to see all the events from tomorrow\n" +
+                                "$nextupcomingday the first upcoming event\n" +
+                                "$thisweek all the events from this week\n" +
+                                "$nextweek all the events from next week"
+            }.WithColor(Color.Blue).Build();
+            await ReplyAsync(embed: embedHelp);
+        }
         [Command("today")]
         public async Task TodayAsync()
         {
@@ -30,7 +55,7 @@ namespace HowestCalendar.Commands
                 var embedbuild = new EmbedBuilder() { Title = "Todays schedule" };
                 foreach (var schedule in events)
                 {
-                    embedbuild.AddField(schedule.Subject,    $"classroom: {schedule.ClassRoom}\n" +
+                    embedbuild.AddField(schedule.Subject,    $"Classroom: {schedule.ClassRoom}\n" +
                                                         $"Hour: {schedule.Time.StartTime:t} - {schedule.Time.EndTime:t}\n" +
                                                         $"Teacher(s): {schedule.Teacher}");
                 }
@@ -52,7 +77,7 @@ namespace HowestCalendar.Commands
                 var embedbuild = new EmbedBuilder() { Title = "Tomorrows schedule" };
                 foreach (var schedule in events)
                 {
-                    embedbuild.AddField(schedule.Subject, $"classroom: {schedule.ClassRoom}\n" +
+                    embedbuild.AddField(schedule.Subject, $"Classroom: {schedule.ClassRoom}\n" +
                                                         $"Hour: {schedule.Time.StartTime:t} - {schedule.Time.EndTime:t}\n" +
                                                         $"Teacher(s): {schedule.Teacher}");
                 }
@@ -74,8 +99,8 @@ namespace HowestCalendar.Commands
                 var embedbuild = new EmbedBuilder() { Title = "Next upcoming schedule" };
                 foreach (var schedule in events)
                 {
-                    embedbuild.AddField(schedule.Subject, $"classroom: {schedule.ClassRoom}\n" +
-                                                        $"day: {schedule.Day:d}\n" +
+                    embedbuild.AddField(schedule.Subject, $"Classroom: {schedule.ClassRoom}\n" +
+                                                        $"Day: {schedule.Day:d}\n" +
                                                         $"Hour: {schedule.Time.StartTime:t} - {schedule.Time.EndTime:t}\n" +
                                                         $"Teacher(s): {schedule.Teacher}");
                 }
@@ -97,7 +122,7 @@ namespace HowestCalendar.Commands
                 var embedbuild = new EmbedBuilder() { Title = "This weeks schedule" };
                 foreach (var schedule in events)
                 {
-                    embedbuild.AddField(schedule.Subject, $"classroom: {schedule.ClassRoom}\n" +
+                    embedbuild.AddField(schedule.Subject, $"Classroom: {schedule.ClassRoom}\n" +
                                                         $"Day: {schedule.Day:d}\n" +
                                                         $"Hour: {schedule.Time.StartTime:t} - {schedule.Time.EndTime:t}\n" +
                                                         $"Teacher(s): {schedule.Teacher}");
@@ -120,7 +145,7 @@ namespace HowestCalendar.Commands
                 var embedbuild = new EmbedBuilder() { Title = "This next weeks schedule" };
                 foreach (var schedule in events)
                 {
-                    embedbuild.AddField(schedule.Subject, $"classroom: {schedule.ClassRoom}\n" +
+                    embedbuild.AddField(schedule.Subject, $"Classroom: {schedule.ClassRoom}\n" +
                                                         $"Day: {schedule.Day:d}\n" +
                                                         $"Hour: {schedule.Time.StartTime:t} - {schedule.Time.EndTime:t}\n" +
                                                         $"Teacher(s): {schedule.Teacher}");
@@ -130,6 +155,7 @@ namespace HowestCalendar.Commands
             }
         }
         [Command("setchannel")]
+        [RequireUserPermission(permission: ChannelPermission.ManageChannels)]
         public async Task SetChannelAsync()
         {
             var channel = Context.Channel;
