@@ -13,21 +13,44 @@ namespace HowestCalendar.Commands
 {
     public class General : ModuleBase<SocketCommandContext>
     {
-        ICSConverter converter = new();
+        ICSHandler icsHandler = new();
 
-        [Command("task")]
-        public async Task TaskAsync()
+        //[Command("task")]
+        //public async Task TaskAsync()
+        //{
+        //    //var events = converter.GetCalendar().First();
+        //    //var embed = new EmbedBuilder()
+        //    //{
+        //    //    Title = "Volgende les",
+        //    //    Description =   $"Les: {events.Subject}\n" +
+        //    //                    $"Dag: {events.Day:d}\n" +
+        //    //                    $"Les start: {events.Time.StartTime:t}\n" +
+        //    //                    $"Les eind: {events.Time.EndTime:t}"
+        //    //}.Build();
+        //    //await ReplyAsync(embed: embed);
+        //}
+        [Command("today")]
+        public async Task TodayAsync()
         {
-            var events = converter.GetCalendar().First();
-            var embed = new EmbedBuilder()
+            var events = icsHandler.TodaySchedule();
+            if(events.Count == 0)
             {
-                Title = "Volgende les",
-                Description =   $"Les: {events.Subject}\n" +
-                                $"Dag: {events.Day:d}\n" +
-                                $"Les start: {events.Time.StartTime:t}\n" +
-                                $"Les eind: {events.Time.EndTime:t}"
-            }.Build();
-            await ReplyAsync(embed: embed);
+                var NoTasks = new EmbedBuilder(){ Title = "No events today" }.Build();
+                await ReplyAsync(embed: NoTasks);
+            }
+            else
+            {
+                var today = new EmbedBuilder() { Title = "Todays schedule" };
+                foreach (var schedule in events)
+                {
+                    today.AddField(schedule.Subject,    $"classroom: {schedule.ClassRoom}\n" +
+                                                        $"hour: {schedule.Time.StartTime:t} - {schedule.Time.EndTime:t}\n" +
+                                                        $"Teacher(s): {schedule.Teacher}");
+                }
+                
+                await ReplyAsync(embed: today.Build());
+            }
+
         }
     }
 }

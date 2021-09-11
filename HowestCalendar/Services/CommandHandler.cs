@@ -18,18 +18,19 @@ namespace HowestCalendar.Services
         private readonly CommandService _commands;
         private readonly DiscordSocketClient _discord;
         private readonly IServiceProvider _services;
-        private Timer _timer;
+        private readonly ICSHandler _icsHandler = new();
+        private readonly Timer _timer;
 
         public CommandHandler(IServiceProvider services)
         {
             _commands = services.GetRequiredService<CommandService>();
             _discord = services.GetRequiredService<DiscordSocketClient>();
             _services = services;
+            _timer = new Timer { AutoReset = true, Interval = 5000 };
 
             _commands.CommandExecuted += CommandExecutedAsync;
             _discord.MessageReceived += MessageReceivedAsync;
 
-            _timer = new Timer { AutoReset = true, Interval = 5000 };
             _timer.Elapsed += Timer_Elapsed;
             _timer.Start();
         }
@@ -53,8 +54,6 @@ namespace HowestCalendar.Services
             await _commands.ExecuteAsync(context, argPos, _services);
             Console.WriteLine($"{DateTime.Now} // {context.User} used command {context.Message}");
         }
-        private async void Timer_Elapsed(object sender, ElapsedEventArgs e) => await SendMessage();
-
         public async Task CommandExecutedAsync(Optional<CommandInfo> command, ICommandContext context, IResult result)
         {
             if (!command.IsSpecified)
@@ -65,10 +64,11 @@ namespace HowestCalendar.Services
 
             await context.Channel.SendMessageAsync($"error: {result}");
         }
+        private async void Timer_Elapsed(object sender, ElapsedEventArgs e) => await SendMessage();
         private async Task SendMessage()
         {
             var guilds = _discord.Guilds;
-            var guild = _discord.GetGuild(_discord.Guilds.Where(sg => sg.Name.Contains("Jamy")).First().Id);
+            var guild = _discord.GetGuild(_discord.Guilds.First().Id);
             var channel = guild.GetChannel(885595138238332948) as SocketTextChannel;
             await channel.SendMessageAsync("test test test");
         }

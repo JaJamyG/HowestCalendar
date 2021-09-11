@@ -12,11 +12,15 @@ namespace HowestCalendar.Services
 {
     public class ICSConverter
     {
-        private List<Event> events;
+        private List<Event> events = new();
+        public ICSConverter()
+        {
+
+        }
         public List<Event> GetCalendar()
         {
             events = new();
-            Calendar calendar = Calendar.Load(File.ReadAllText(Directory.GetCurrentDirectory() + "/TimeTable.ics"));
+            Calendar calendar = Calendar.Load(File.ReadAllText(Directory.GetCurrentDirectory() + "/timetable.ics"));
             foreach (CalendarEvent lessonEvents in calendar.Events)
             {
                 events.Add(new Event
