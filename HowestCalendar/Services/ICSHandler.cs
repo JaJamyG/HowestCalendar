@@ -81,5 +81,24 @@ namespace HowestCalendar.Services
             }
             return lessons;
         }
+        public List<Event> FirstUpcomingSchedule()
+        {
+            DateTime today = DateTime.Now;
+            DateTime? firstUpcomingDay = null;
+            List<Event> lessons = new();
+
+            foreach (Event lesson in Lessons)
+            {
+                if (lesson.Day > today)
+                {
+                    if(firstUpcomingDay == null)
+                        firstUpcomingDay = lesson.Day;
+
+                    if(firstUpcomingDay == lesson.Day)
+                        lessons.Add(lesson);
+                }
+            }
+            return lessons;
+        }
     }
 }

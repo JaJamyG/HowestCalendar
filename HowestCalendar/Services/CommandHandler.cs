@@ -20,6 +20,7 @@ namespace HowestCalendar.Services
         private readonly IServiceProvider _services;
         private readonly ICSHandler _icsHandler = new();
         private readonly Timer _timer;
+        private AppSettings appSettings = JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText("appsettings.json"));
 
         public CommandHandler(IServiceProvider services)
         {
@@ -47,8 +48,7 @@ namespace HowestCalendar.Services
 
             var argPos = 0;
 
-            var prefix = JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText("appsettings.json")).Prefix;
-            if (!message.HasStringPrefix(prefix, ref argPos) && !message.HasMentionPrefix(_discord.CurrentUser, ref argPos)) return;
+            if (!message.HasStringPrefix(appSettings.Prefix, ref argPos) && !message.HasMentionPrefix(_discord.CurrentUser, ref argPos)) return;
 
             var context = new SocketCommandContext(_discord, message);
             await _commands.ExecuteAsync(context, argPos, _services);
@@ -67,10 +67,18 @@ namespace HowestCalendar.Services
         private async void Timer_Elapsed(object sender, ElapsedEventArgs e) => await SendMessage();
         private async Task SendMessage()
         {
-            var guilds = _discord.Guilds;
-            var guild = _discord.GetGuild(_discord.Guilds.First().Id);
-            var channel = guild.GetChannel(885595138238332948) as SocketTextChannel;
-            await channel.SendMessageAsync("test test test");
+            try
+            {
+                appSettings = JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText("appsettings.json"));
+                var channel = _discord.GetChannel(ulong.Parse(appSettings.SetChannel)) as SocketTextChannel;
+                await channel.SendMessageAsync("test test test");
+
+            }
+            catch
+            {
+                Console.WriteLine("No channel set");
+            }
+
         }
     }
 }

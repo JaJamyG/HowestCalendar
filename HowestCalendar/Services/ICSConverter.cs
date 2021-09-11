@@ -47,7 +47,7 @@ namespace HowestCalendar.Services
         {
             string[] ret = haystack.Replace("\n\n", "\n").Split("\n");
             if (ret.Length < 4) return "";
-            return ret[3].Replace("Lector(en): ", "");
+            return ret[3].Replace("Staff member(s): ", "");
         }
     }
 }
