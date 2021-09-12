@@ -10,6 +10,7 @@ using System.IO;
 using HowestCalendar.Entities;
 using System.Timers;
 using System.Linq;
+using HowestCalendar.Commands;
 
 namespace HowestCalendar.Services
 {
@@ -22,6 +23,7 @@ namespace HowestCalendar.Services
         private readonly Timer _timer;
         private AppSettings appSettings = JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText("appsettings.json"));
         private DateTime? sended = null;
+        private readonly SlashCommands _slashCommands = new();
 
         public CommandHandler(IServiceProvider services)
         {
@@ -31,7 +33,7 @@ namespace HowestCalendar.Services
             _timer = new Timer { AutoReset = true, Interval = 3_600_000 };
 
             _commands.CommandExecuted += CommandExecutedAsync;
-            _discord.MessageReceived += MessageReceivedAsync;
+            _discord.InteractionCreated += Client_InteractionCreated;
 
             _timer.Elapsed += Timer_Elapsed;
             _timer.Start();
@@ -41,19 +43,10 @@ namespace HowestCalendar.Services
         {
             await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
         }
-
-        public async Task MessageReceivedAsync(SocketMessage rawMessage)
+        private async Task Client_InteractionCreated(SocketInteraction arg)
         {
-            if (!(rawMessage is SocketUserMessage message)) return;
-            if (message.Source != MessageSource.User) return;
-
-            var argPos = 0;
-
-            if (!message.HasStringPrefix(appSettings.Prefix, ref argPos) && !message.HasMentionPrefix(_discord.CurrentUser, ref argPos)) return;
-
-            var context = new SocketCommandContext(_discord, message);
-            await _commands.ExecuteAsync(context, argPos, _services);
-            Console.WriteLine($"{DateTime.Now} // {context.User} used command {context.Message}");
+            if (arg is SocketSlashCommand command)
+                await _slashCommands.Command(command, _discord);
         }
         public async Task CommandExecutedAsync(Optional<CommandInfo> command, ICommandContext context, IResult result)
         {
@@ -72,11 +65,13 @@ namespace HowestCalendar.Services
             {
                 if(sended == null || sended.Value.Date != DateTime.Today.Date)
                 {
+                    Console.WriteLine($"{DateTime.Now.Date} checking for events for tomorrow.");
                     appSettings = JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText("appsettings.json"));
                     var channel = _discord.GetChannel(ulong.Parse(appSettings.SetChannel)) as SocketTextChannel;
                     var events = _icsHandler.TomorrowSchedule();
                     if(events.Count() != 0)
                     {
+                        Console.WriteLine($"{DateTime.Now.Date} Found one.");
                         var embedbuild = new EmbedBuilder() { Title = "Todays schedule" };
                         foreach (var schedule in events)
                         {
@@ -86,7 +81,8 @@ namespace HowestCalendar.Services
                         }
                         await channel.SendMessageAsync(embed: embedbuild.WithColor(Color.Blue).Build());
                     }
-                    sended = DateTime.Now;
+                    sended = DateTime.Now; 
+                    Console.WriteLine($"{DateTime.Now.Date} Done!");
                 }
             }
             catch
