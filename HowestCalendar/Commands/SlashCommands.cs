@@ -11,16 +11,15 @@ namespace HowestCalendar.Commands
     public class SlashCommands
     {
         private readonly General _general = new();
-        private readonly ResetSlash _reset = new();
         public async Task Command(SocketSlashCommand command, DiscordSocketClient client)
         {
             switch (command.Data.Name)
             {
                 case "info":
-                    await _general.InfoAsync(command);
+                    await General.InfoAsync(command);
                     break;
                 case "help":
-                    await _general.HelpAsync(command);
+                    await General.HelpAsync(command);
                     break;
                 case "today":
                     await _general.TodayAsync(command);
@@ -38,11 +37,11 @@ namespace HowestCalendar.Commands
                     await _general.NextWeekAsync(command);
                     break;
                 case "setchannel":
-                    await _general.SetChannelAsync(command);
+                    await General.SetChannelAsync(command);
                     break;
                 case "oneshot":
                     if (command.User.Id == 272800434639470592)
-                        await _reset.Reset(command, client);
+                        await ResetSlash.Reset(command, client);
                     else
                         await command.RespondAsync("You are not authorised");
                     break;

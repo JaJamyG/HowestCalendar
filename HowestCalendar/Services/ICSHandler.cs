@@ -10,19 +10,23 @@ namespace HowestCalendar.Services
 {
     public class ICSHandler
     {
-        public List<Event> Lessons { get; private set; }
+        public List<ServerEvent> Lessons { get; private set; }
         private readonly ICSConverter icsConverter = new();
         public ICSHandler()
         {
             Lessons = new();
             Lessons = icsConverter.GetCalendar();
         }
-        public List<Event> TodaySchedule()
+        public void Reset()
+        {
+            Lessons = new();
+            Lessons = icsConverter.GetCalendar();
+        }
+        public List<Event> TodaySchedule(string guild)
         {
             DateTime today = DateTime.Now;
             List<Event> lessons = new();
-
-            foreach (Event lesson in Lessons)
+            foreach (Event lesson in Lessons.Where(x => x.Guild == guild).First().Events)
             {
                 if(lesson.Day.ToShortDateString() == today.ToShortDateString())
                 {
@@ -31,12 +35,11 @@ namespace HowestCalendar.Services
             }
             return lessons;
         }
-        public List<Event> TomorrowSchedule()
+        public List<Event> TomorrowSchedule(string guild)
         {
             DateTime today = DateTime.Now;
             List<Event> lessons = new();
-
-            foreach (Event lesson in Lessons)
+            foreach (Event lesson in Lessons.Where(x => x.Guild == guild).First().Events)
             {
                 if (lesson.Day.ToShortDateString() == today.AddDays(1).ToShortDateString())
                 {
@@ -45,16 +48,16 @@ namespace HowestCalendar.Services
             }
             return lessons;
         }
-        public List<Event> WeekSchedule()
+        public List<Event> WeekSchedule(string guild)
         {
-            CultureInfo myCI = new CultureInfo("en-US");
+            CultureInfo myCI = new("en-US");
             Calendar myCal = myCI.Calendar;
             DateTime today = DateTime.Now;
             List<Event> lessons = new();
             CalendarWeekRule myCWR = myCI.DateTimeFormat.CalendarWeekRule;
             DayOfWeek myFirstDOW = myCI.DateTimeFormat.FirstDayOfWeek;
 
-            foreach (Event lesson in Lessons)
+            foreach (Event lesson in Lessons.Where(x => x.Guild == guild).First().Events)
             {
                 if (myCal.GetWeekOfYear(lesson.Day, myCWR, myFirstDOW) == myCal.GetWeekOfYear(today, myCWR, myFirstDOW))
                 {
@@ -63,16 +66,16 @@ namespace HowestCalendar.Services
             }
             return lessons;
         }
-        public List<Event> NextWeekSchedule()
+        public List<Event> NextWeekSchedule(string guild)
         {
-            CultureInfo myCI = new CultureInfo("en-US");
+            CultureInfo myCI = new("en-US");
             Calendar myCal = myCI.Calendar;
             DateTime today = DateTime.Now;
             List<Event> lessons = new();
             CalendarWeekRule myCWR = myCI.DateTimeFormat.CalendarWeekRule;
             DayOfWeek myFirstDOW = myCI.DateTimeFormat.FirstDayOfWeek;
 
-            foreach (Event lesson in Lessons)
+            foreach (Event lesson in Lessons.Where(x => x.Guild == guild).First().Events)
             {
                 if (myCal.GetWeekOfYear(lesson.Day, myCWR, myFirstDOW) == (1 + myCal.GetWeekOfYear(today, myCWR, myFirstDOW)))
                 {
@@ -81,13 +84,13 @@ namespace HowestCalendar.Services
             }
             return lessons;
         }
-        public List<Event> FirstUpcomingSchedule()
+        public List<Event> FirstUpcomingSchedule(string guild)
         {
             DateTime today = DateTime.Now;
             DateTime? firstUpcomingDay = null;
             List<Event> lessons = new();
 
-            foreach (Event lesson in Lessons)
+            foreach (Event lesson in Lessons.Where(x => x.Guild == guild).First().Events)
             {
                 if (lesson.Day > today)
                 {

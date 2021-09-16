@@ -12,7 +12,7 @@ namespace HowestCalendar.Entities
 {
     public class ResetSlash
     {
-        public async Task Reset(SocketSlashCommand command, DiscordSocketClient client)
+        public static async Task Reset(SocketSlashCommand command, DiscordSocketClient client)
         {
             Console.WriteLine($"{DateTime.Now} Deleting commands");
             await client.Rest.DeleteAllGlobalCommandsAsync();

@@ -1,6 +1,7 @@
 ﻿using HowestCalendar.Entities;
 using Ical.Net;
 using Ical.Net.CalendarComponents;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,38 +13,55 @@ namespace HowestCalendar.Services
 {
     public class ICSConverter
     {
-        private List<Event> events = new();
+        private readonly List<ServerEvent> serverEvents = new();
+        readonly AppSettings appSettings = JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText("appsettings.json"));
         public ICSConverter()
         {
 
         }
-        public List<Event> GetCalendar()
+        public List<ServerEvent> GetCalendar()
         {
-            events = new();
-            Calendar calendar = Calendar.Load(File.ReadAllText(Directory.GetCurrentDirectory() + "/timetable.ics"));
-            foreach (CalendarEvent lessonEvents in calendar.Events)
+            foreach(var settings in appSettings.Settings)
             {
-                events.Add(new Event
+                try
                 {
-                    ClassRoom = lessonEvents.Location,
-                    Day = GetDateZeroTime(lessonEvents.DtStart.Value),
-                    Subject = lessonEvents.Summary,
-                    Teacher = GetTeacher(lessonEvents.Description),
-                    Time = new Time
+                    if (settings.Guild != "" && settings.TimeTable != "")
                     {
-                        StartTime = lessonEvents.DtStart.Value,
-                        EndTime = lessonEvents.DtEnd.Value
+                        ServerEvent serverEvent = new(); 
+                        List<Event> events = new(); 
+                        Calendar calendar = Calendar.Load(File.ReadAllText(Directory.GetCurrentDirectory() + "/" + settings.TimeTable));
+                        foreach (CalendarEvent lessonEvents in calendar.Events)
+                        {
+                            events.Add(new Event
+                            {
+                                ClassRoom = lessonEvents.Location,
+                                Day = GetDateZeroTime(lessonEvents.DtStart.Value),
+                                Subject = lessonEvents.Summary,
+                                Teacher = GetTeacher(lessonEvents.Description),
+                                Time = new Time
+                                {
+                                    StartTime = lessonEvents.DtStart.Value,
+                                    EndTime = lessonEvents.DtEnd.Value
+                                }
+                            });
+                        }
+                        serverEvent.Guild = settings.Guild;
+                        serverEvent.Events = events;
+                        serverEvents.Add(serverEvent);
                     }
-                });
+                }
+                catch
+                {
+                }
             }
-            return events;
+            return serverEvents;
         }
-        private DateTime GetDateZeroTime(DateTime date)
+        private static DateTime GetDateZeroTime(DateTime date)
         {
             return new DateTime(date.Year, date.Month, date.Day, 0, 0, 0);
         }
 
-        private string GetTeacher(string haystack)
+        private static string GetTeacher(string haystack)
         {
             string[] ret = haystack.Replace("\n\n", "\n").Split("\n");
             if (ret.Length < 4) return "";

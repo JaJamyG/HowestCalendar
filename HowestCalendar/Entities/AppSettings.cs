@@ -9,7 +9,12 @@ namespace HowestCalendar.Entities
     public class AppSettings
     {
         public string Token { get; set; }
-        public string Prefix { get; set; }
+        public List<Settings> Settings { get; set; }
+    }
+    public class Settings
+    {
+        public string Guild { get; set; }
         public string SetChannel { get; set; }
+        public string TimeTable { get; set; }
     }
 }

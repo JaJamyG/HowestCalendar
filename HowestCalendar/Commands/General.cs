@@ -15,8 +15,8 @@ namespace HowestCalendar.Commands
 {
     public class General
     {
-        private ICSHandler _icsHandler = new();
-        public async Task InfoAsync(SocketSlashCommand command)
+        private readonly ICSHandler _icsHandler = new();
+        public static async Task InfoAsync(SocketSlashCommand command)
         {
             Console.WriteLine($"{DateTime.Now} user {command.User.Username} uses {command.Data.Name}");
             var embedInfo = new EmbedBuilder() 
@@ -27,7 +27,7 @@ namespace HowestCalendar.Commands
             await command.RespondAsync(embed: embedInfo);
         }
 
-        public async Task HelpAsync(SocketSlashCommand command)
+        public static async Task HelpAsync(SocketSlashCommand command)
         {
             Console.WriteLine($"{DateTime.Now} user {command.User.Username} uses {command.Data.Name}");
             var embedHelp = new EmbedBuilder()
@@ -46,7 +46,8 @@ namespace HowestCalendar.Commands
         public async Task TodayAsync(SocketSlashCommand command)
         {
             Console.WriteLine($"{DateTime.Now} user {command.User.Username} uses {command.Data.Name}");
-            var events = _icsHandler.TodaySchedule();
+            var channel = command.Channel as SocketGuildChannel;
+            var events = _icsHandler.TodaySchedule(channel.Guild.Id.ToString());
             if(events.Count == 0)
             {
                 var NoTasks = new EmbedBuilder(){ Title = "No events today" }.WithColor(Color.Blue).Build();
@@ -69,7 +70,8 @@ namespace HowestCalendar.Commands
         public async Task TomorrowAsync(SocketSlashCommand command)
         {
             Console.WriteLine($"{DateTime.Now} user {command.User.Username} uses {command.Data.Name}");
-            var events = _icsHandler.TomorrowSchedule();
+            var channel = command.Channel as SocketGuildChannel;
+            var events = _icsHandler.TomorrowSchedule(channel.Guild.Id.ToString());
             if (events.Count == 0)
             {
                 var NoTasks = new EmbedBuilder() { Title = "No events tomorrow" }.WithColor(Color.Blue).Build();
@@ -92,7 +94,8 @@ namespace HowestCalendar.Commands
         public async Task UpcommingDayAsync(SocketSlashCommand command)
         {
             Console.WriteLine($"{DateTime.Now} user {command.User.Username} uses {command.Data.Name}");
-            var events = _icsHandler.FirstUpcomingSchedule();
+            var channel = command.Channel as SocketGuildChannel;
+            var events = _icsHandler.FirstUpcomingSchedule(channel.Guild.Id.ToString());
             if (events.Count == 0)
             {
                 var NoTasks = new EmbedBuilder() { Title = "No events up coming lessons" }.WithColor(Color.Blue).Build();
@@ -116,7 +119,8 @@ namespace HowestCalendar.Commands
         public async Task ThisWeekAsync(SocketSlashCommand command)
         {
             Console.WriteLine($"{DateTime.Now} user {command.User.Username} uses {command.Data.Name}");
-            var events = _icsHandler.WeekSchedule();
+            var channel = command.Channel as SocketGuildChannel;
+            var events = _icsHandler.WeekSchedule(channel.Guild.Id.ToString());
             if (events.Count == 0)
             {
                 var NoTasks = new EmbedBuilder() { Title = "No events this week" }.WithColor(Color.Blue).Build();
@@ -140,7 +144,8 @@ namespace HowestCalendar.Commands
         public async Task NextWeekAsync(SocketSlashCommand command)
         {
             Console.WriteLine($"{DateTime.Now} user {command.User.Username} uses {command.Data.Name}");
-            var events = _icsHandler.NextWeekSchedule();
+            var channel = command.Channel as SocketGuildChannel;
+            var events = _icsHandler.NextWeekSchedule(channel.Guild.Id.ToString());
             if (events.Count == 0)
             {
                 var NoTasks = new EmbedBuilder() { Title = "No events this next week" }.WithColor(Color.Blue).Build();
@@ -161,13 +166,20 @@ namespace HowestCalendar.Commands
             }
         }
 
-        public async Task SetChannelAsync(SocketSlashCommand command)
+        public static async Task SetChannelAsync(SocketSlashCommand command)
         {
             Console.WriteLine($"{DateTime.Now} user {command.User.Username} uses {command.Data.Name}");
-            var channel = command.Channel;
+
+            var channel = command.Channel as SocketGuildChannel;
+
             AppSettings appSettings = JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText("appsettings.json"));
-            appSettings.SetChannel = channel.Id.ToString();
+
+            var settings = appSettings.Settings.Where(x => x.Guild == channel.Guild.Id.ToString()).First();
+
+            settings.SetChannel = channel.Id.ToString();
+
             File.WriteAllText("appsettings.json", JsonConvert.SerializeObject(appSettings));
+
             await command.RespondAsync($"Notications set to channel: {channel.Name}");
         }
     }

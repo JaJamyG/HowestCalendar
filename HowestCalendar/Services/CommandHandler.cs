@@ -20,7 +20,7 @@ namespace HowestCalendar.Services
         private readonly DiscordSocketClient _discord;
         private readonly IServiceProvider _services;
         private readonly ICSHandler _icsHandler = new();
-        private readonly Timer _timer;
+        private readonly Timer _timer = new() { AutoReset = true, Interval = 1_800_000, Enabled = true };
         private AppSettings appSettings = JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText("appsettings.json"));
         private DateTime? sended = null;
         private readonly SlashCommands _slashCommands = new();
@@ -30,13 +30,11 @@ namespace HowestCalendar.Services
             _commands = services.GetRequiredService<CommandService>();
             _discord = services.GetRequiredService<DiscordSocketClient>();
             _services = services;
-            _timer = new Timer { AutoReset = true, Interval = 3_600_000 };
 
             _commands.CommandExecuted += CommandExecutedAsync;
             _discord.InteractionCreated += Client_InteractionCreated;
-
+            _discord.JoinedGuild += Client_JoinGuild;
             _timer.Elapsed += Timer_Elapsed;
-            _timer.Start();
         }
 
         public async Task InitializeAsync()
@@ -48,7 +46,7 @@ namespace HowestCalendar.Services
             if (arg is SocketSlashCommand command)
                 await _slashCommands.Command(command, _discord);
         }
-        public async Task CommandExecutedAsync(Optional<CommandInfo> command, ICommandContext context, IResult result)
+        public static async Task CommandExecutedAsync(Optional<CommandInfo> command, ICommandContext context, IResult result)
         {
             if (!command.IsSpecified)
                 return;
@@ -63,33 +61,51 @@ namespace HowestCalendar.Services
         {
             try
             {
-                if(sended == null || sended.Value.Date != DateTime.Today.Date)
+                if(sended == null || sended.Value.Date != DateTime.Today.Date && DateTime.Now.TimeOfDay > TimeSpan.FromHours(6))
                 {
-                    Console.WriteLine($"{DateTime.Now.Date} checking for events for tomorrow.");
+                    Console.WriteLine($"{DateTime.Now} checking for events for tomorrow.");
                     appSettings = JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText("appsettings.json"));
-                    var channel = _discord.GetChannel(ulong.Parse(appSettings.SetChannel)) as SocketTextChannel;
-                    var events = _icsHandler.TomorrowSchedule();
-                    if(events.Count() != 0)
+                    var settings = appSettings.Settings;
+                    
+                    foreach(var setting in settings)
                     {
-                        Console.WriteLine($"{DateTime.Now.Date} Found one.");
-                        var embedbuild = new EmbedBuilder() { Title = "Todays schedule" };
-                        foreach (var schedule in events)
+                        var events = _icsHandler.TomorrowSchedule(setting.Guild);
+                        if(events.Count != 0)
                         {
-                            embedbuild.AddField(schedule.Subject, $"classroom: {schedule.ClassRoom}\n" +
-                                                                $"Hour: {schedule.Time.StartTime:t} - {schedule.Time.EndTime:t}\n" +
-                                                                $"Teacher(s): {schedule.Teacher}");
+                            foreach(var calander in events)
+                            {
+                                var channel = _discord.GetChannel(ulong.Parse(setting.SetChannel)) as SocketTextChannel;
+                                var embedbuild = new EmbedBuilder() { Title = "Todays schedule" };
+                                foreach (var schedule in events)
+                                {
+                                    embedbuild.AddField(schedule.Subject, $"classroom: {schedule.ClassRoom}\n" +
+                                                                        $"Hour: {schedule.Time.StartTime:t} - {schedule.Time.EndTime:t}\n" +
+                                                                        $"Teacher(s): {schedule.Teacher}");
+                                }
+                                await channel.SendMessageAsync(embed: embedbuild.WithColor(Color.Blue).Build());
+                                Console.WriteLine($"{DateTime.Now} Found one for server {channel}");
+                            }
                         }
-                        await channel.SendMessageAsync(embed: embedbuild.WithColor(Color.Blue).Build());
+                        sended = DateTime.Now;
+                        Console.WriteLine($"{DateTime.Now} Done!");
                     }
-                    sended = DateTime.Now; 
-                    Console.WriteLine($"{DateTime.Now.Date} Done!");
                 }
             }
             catch
             {
                 Console.WriteLine("No channel set");
             }
+        }
+        private Task Client_JoinGuild(SocketGuild socketGuild)
+        {
+            AppSettings appSettings = JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText("appsettings.json"));
+            Settings settings = new();
+            settings.Guild = socketGuild.Id.ToString();
+            appSettings.Settings.Add(settings);
+            File.WriteAllText("appsettings.json", JsonConvert.SerializeObject(appSettings));
 
+            _icsHandler.Reset();
+            return Task.CompletedTask;
         }
     }
 }
