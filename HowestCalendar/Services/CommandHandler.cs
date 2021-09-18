@@ -20,7 +20,7 @@ namespace HowestCalendar.Services
         private readonly DiscordSocketClient _discord;
         private readonly IServiceProvider _services;
         private readonly ICSHandler _icsHandler = new();
-        private readonly Timer _timer = new() { AutoReset = true, Interval = 1_800_000, Enabled = true };
+        private readonly Timer _timer = new() { AutoReset = true, Interval = 1000, Enabled = true };
         private AppSettings appSettings = JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText("appsettings.json"));
         private DateTime? sended = null;
         private readonly SlashCommands _slashCommands = new();
@@ -61,7 +61,7 @@ namespace HowestCalendar.Services
         {
             try
             {
-                if(sended == null || sended.Value.Date != DateTime.Today.Date && DateTime.Now.TimeOfDay > TimeSpan.FromHours(6))
+                if(sended == null || sended.Value.Date != DateTime.Today.Date && DateTime.Now.TimeOfDay > TimeSpan.FromHours(20))
                 {
                     Console.WriteLine($"{DateTime.Now} checking for events for tomorrow.");
                     appSettings = JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText("appsettings.json"));
@@ -75,7 +75,7 @@ namespace HowestCalendar.Services
                             foreach(var calander in events)
                             {
                                 var channel = _discord.GetChannel(ulong.Parse(setting.SetChannel)) as SocketTextChannel;
-                                var embedbuild = new EmbedBuilder() { Title = "Todays schedule" };
+                                var embedbuild = new EmbedBuilder() { Title = "Tomorrows schedule" };
                                 foreach (var schedule in events)
                                 {
                                     embedbuild.AddField(schedule.Subject, $"classroom: {schedule.ClassRoom}\n" +
