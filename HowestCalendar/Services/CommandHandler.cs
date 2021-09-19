@@ -61,7 +61,7 @@ namespace HowestCalendar.Services
         {
             try
             {
-                if(sended == null || sended.Value.Date != DateTime.Today.Date && DateTime.Now.TimeOfDay > TimeSpan.FromHours(20))
+                if((sended == null || sended.Value.Date != DateTime.Today.Date) && DateTime.Now.TimeOfDay > TimeSpan.FromHours(20))
                 {
                     Console.WriteLine($"{DateTime.Now} checking for events for tomorrow.");
                     appSettings = JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText("appsettings.json"));
@@ -84,6 +84,8 @@ namespace HowestCalendar.Services
                                 }
                                 await channel.SendMessageAsync(embed: embedbuild.WithColor(Color.Blue).Build());
                                 Console.WriteLine($"{DateTime.Now} Found one for server {channel}");
+                                await channel.SendMessageAsync(DateTime.Now.TimeOfDay.TotalHours.ToString());
+                                await channel.SendMessageAsync(TimeSpan.FromHours(20).TotalHours.ToString());
                             }
                         }
                         sended = DateTime.Now;
