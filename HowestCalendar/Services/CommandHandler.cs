@@ -61,32 +61,28 @@ namespace HowestCalendar.Services
         {
             try
             {
-                if((sended == null || sended.Value.Date != DateTime.Today.Date) && DateTime.Now.TimeOfDay > TimeSpan.FromHours(20))
+                if ((sended == null || sended.Value.Date != DateTime.Today.Date) && DateTime.Now.TimeOfDay > TimeSpan.FromHours(20))
                 {
                     Console.WriteLine($"{DateTime.Now} checking for events for tomorrow.");
                     appSettings = JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText("appsettings.json"));
                     var settings = appSettings.Settings;
-                    
-                    foreach(var setting in settings)
+
+                    foreach (var setting in settings)
                     {
                         var events = _icsHandler.TomorrowSchedule(setting.Guild);
-                        if(events.Count != 0)
+                        if (events.Count != 0)
                         {
-                            foreach(var calander in events)
+                            var channel = _discord.GetChannel(ulong.Parse(setting.SetChannel)) as SocketTextChannel;
+                            var embedbuild = new EmbedBuilder() { Title = "Tomorrows schedule" };
+                            foreach (var calander in events)
                             {
-                                var channel = _discord.GetChannel(ulong.Parse(setting.SetChannel)) as SocketTextChannel;
-                                var embedbuild = new EmbedBuilder() { Title = "Tomorrows schedule" };
-                                foreach (var schedule in events)
-                                {
-                                    embedbuild.AddField(schedule.Subject, $"classroom: {schedule.ClassRoom}\n" +
-                                                                        $"Hour: {schedule.Time.StartTime:t} - {schedule.Time.EndTime:t}\n" +
-                                                                        $"Teacher(s): {schedule.Teacher}");
-                                }
-                                await channel.SendMessageAsync(embed: embedbuild.WithColor(Color.Blue).Build());
-                                Console.WriteLine($"{DateTime.Now} Found one for server {channel}");
-                                await channel.SendMessageAsync(DateTime.Now.TimeOfDay.TotalHours.ToString());
-                                await channel.SendMessageAsync(TimeSpan.FromHours(20).TotalHours.ToString());
+                                embedbuild.AddField(calander.Subject,   $"classroom: {calander.ClassRoom}\n" +
+                                                                        $"Hour: {calander.Time.StartTime:t} - {calander.Time.EndTime:t}\n" +
+                                                                        $"Teacher(s): {calander.Teacher}");
                             }
+                            Console.WriteLine($"{DateTime.Now} Found one for server {channel}");
+
+                            await channel.SendMessageAsync(embed: embedbuild.WithColor(Color.Blue).Build());
                         }
                         sended = DateTime.Now;
                         Console.WriteLine($"{DateTime.Now} Done!");
